@@ -28,6 +28,13 @@ Rope.prototype.toString = function() {
 	return this.segs.join("");
 };
 
+Rope.prototype.clone = function() {
+	var r = new Rope();
+	r.segs = this.segs.slice();
+	r.length = this.length;
+	return r;
+};
+
 Rope.prototype.push = function(str) {
 	if (str.length === 0) {
 		return;
@@ -164,82 +171,250 @@ Rope.prototype.charCodeAt = function(pos) {
 	return NaN;
 };
 
-Rope.prototype.toUpperCase = function() {
-	return new Rope(this.segs.map(function(s) { return s.toUpperCase(); }));
+Rope.prototype.concat = function() {
+	var r = new Rope(this.segs);
+	for (var i=0; i<arguments.length; i++) {
+		var a = arguments[i];
+		if (a instanceof Rope) {
+			for (var j=0; j<a.segs.length; j++) {
+				r.push(a.segs[j]);
+			}
+		} else {
+			r.push(a);
+		}
+	}
+	return r;
 };
 
-Rope.prototype.toLowerCase = function() {
-	return new Rope(this.segs.map(function(s) { return s.toLowerCase(); }));
+Rope.prototype.indexOf = function(needle) {
+	var off = 0;
+	for (var i=0; i<this.segs.length; i++) {
+		var idx = this.segs[i].indexOf(needle);
+		if (idx !== -1) {
+			return off+idx;
+		}
+		off += this.segs[i].length;
+	}
+	return -1;
 };
 
-Rope.prototype.replace = function() {
-	return new Rope(String.prototype.replace.apply(this.toString(), arguments));
+Rope.prototype.lastIndexOf = function(needle) {
+	var off = this.length;
+	for (var i=this.segs.length-1; i>=0; i--) {
+		var idx = this.segs[i].lastIndexOf(needle);
+		off -= this.segs[i].length;
+		if (idx !== -1) {
+			return off+idx;
+		}
+	}
+	return -1;
+};
+
+Rope.prototype.localeCompare = function(vs) {
+	return this.toString().localeCompare(vs);
 };
 
 Rope.prototype.match = function() {
 	return String.prototype.match.apply(this.toString(), arguments);
 };
 
+Rope.prototype.replace = function() {
+	return new Rope(String.prototype.replace.apply(this.toString(), arguments));
+};
 
+Rope.prototype.search = function() {
+	return String.prototype.search.apply(this.toString(), arguments);
+};
+
+Rope.prototype.split = function() {
+	return String.prototype.split.apply(this.toString(), arguments).map(function(s) { return new Rope(s); });
+};
+
+Rope.prototype.substring = function(start, x) {
+	if (x < 0) {
+		x = start;
+		start = 0;
+	}
+	if (x < start) {
+		var tmp = x;
+		x = start;
+		start = tmp;
+	}
+	return this.slice(start, x);
+};
+
+Rope.prototype.substr = function(start, len) {
+	if (start < 0) {
+		start += this.length;
+	}
+	if (start < 0) {
+		start = 0;
+	}
+	if (len < 0) {
+		len = 0;
+	}
+	return this.slice(start, start+len);
+};
+
+Rope.prototype.toLocaleLowerCase = function() {
+	return this.clone().toLocaleLowerCaseInPlace();
+};
+
+Rope.prototype.toLocaleLowerCaseInPlace = function() {
+	for (var i=0; i<this.segs.length; i++) {
+		this.segs[i] = this.segs[i].toLocaleLowerCase();
+	}
+	return this;
+};
+
+Rope.prototype.toLocaleUpperCase = function() {
+	return this.clone().toLocaleUpperCaseInPlace();
+};
+
+Rope.prototype.toLocaleUpperCaseInPlace = function() {
+	for (var i=0; i<this.segs.length; i++) {
+		this.segs[i] = this.segs[i].toLocaleUpperCase();
+	}
+	return this;
+};
+
+Rope.prototype.toLowerCase = function() {
+	return this.clone().toLowerCaseInPlace();
+};
+
+Rope.prototype.toLowerCaseInPlace = function() {
+	for (var i=0; i<this.segs.length; i++) {
+		this.segs[i] = this.segs[i].toLowerCase();
+	}
+	return this;
+};
+
+Rope.prototype.toUpperCase = function() {
+	return this.clone().toUpperCaseInPlace();
+};
+
+Rope.prototype.toUpperCaseInPlace = function() {
+	for (var i=0; i<this.segs.length; i++) {
+		this.segs[i] = this.segs[i].toUpperCase();
+	}
+	return this;
+};
+
+Rope.prototype.trim = function() {
+	return this.clone().trimInPlace();
+};
+
+Rope.prototype.trimInPlace = function() {
+	return this.trimLeftInPlace().trimRightInPlace();
+};
+
+Rope.prototype.trimLeft = function() {
+	return this.clone().trimLeftInPlace();
+};
+
+Rope.prototype.trimLeftInPlace = function() {
+	for (var i=0; i<this.segs.length; i++) {
+		var seg = this.segs[i];
+		var nseg = seg.replace(/^\s+/, '');
+		this.length += (nseg.length - seg.length);
+		if (nseg.length > 0) {
+			this.segs[i] = nseg;
+			break;
+		} else {
+			this.segs.shift();
+			i--;
+		}
+	}
+	return this;
+};
+
+Rope.prototype.trimRight = function() {
+	return this.clone().trimRightInPlace();
+};
+
+Rope.prototype.trimRightInPlace = function() {
+	for (var i=this.segs.length-1; i>=0; i--) {
+		var seg = this.segs[i];
+		var nseg = seg.replace(/\s+$/, '');
+		this.length += (nseg.length - seg.length);
+		if (nseg.length > 0) {
+			this.segs[i] = nseg;
+			break;
+		} else {
+			this.segs.pop();
+		}
+	}
+	return this;
+};
+
+
+
+
+var Random = {
+	byte: function() { return (Math.random()*256) | 0; },
+
+	uint: function(max) {
+		return ((Math.random()*(max || (1<<31))) | 0);
+	},
+
+	int: function(max) {
+		max = max || (1<<31);
+		return (Math.random()*max - max/2) | 0;
+	},
+
+	length: function(maxLen) {
+		maxLen = maxLen || 100;
+		var r = Math.random();
+		if (r < 0.05) {
+			return 0;
+		} else if (r > 0.95) {
+			return maxLen;
+		}
+		return (maxLen * Math.random()) | 0;
+	},
+
+	char: function() {
+		var idx = (Math.random()*40) | 0;
+		if (idx >= 26) {
+			return 32;
+		} else {
+			return 65 + idx;
+		}
+	},
+
+	string: function(maxLen) { 
+		var len = Random.length(maxLen);
+		var str = '';
+		for (var i=0; i<len; i++) {
+			str += String.fromCharCode(Random.char());
+		}
+		return str;
+	},
+
+	array: function(gen, maxLen) {
+		var len = Random.length(maxLen);
+		var a = [];
+		for (var i=0; i<len; i++) {
+			a.push(gen());
+		}
+		return a;
+	}
+};
+
+var eq = function(a,b, msg) {
+	if (a != b && !(typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b))) {
+		if (typeof a === typeof b && typeof a === 'object') {
+			if (JSON.stringify(a) !== JSON.stringify(b)) {
+				throw(Error(msg + " : " + JSON.stringify(a) + " != " + JSON.stringify(b)));
+			}
+		} else {
+			throw(Error(msg + " : " +a + " != " + b));
+		}
+	}
+};
 
 
 Rope.test = function() {
-	var Random = {
-		byte: function() { return (Math.random()*256) | 0; },
-
-		uint: function(max) {
-			return ((Math.random()*(max || (1<<31))) | 0);
-		},
-
-		int: function(max) {
-			max = max || (1<<31);
-			return (Math.random()*max - max/2) | 0;
-		},
-
-		length: function(maxLen) {
-			maxLen = maxLen || 100;
-			var r = Math.random();
-			if (r < 0.05) {
-				return 0;
-			} else if (r > 0.95) {
-				return maxLen;
-			}
-			return (maxLen * Math.random()) | 0;
-		},
-
-		char: function() {
-			var idx = (Math.random()*27) | 0;
-			if (idx === 26) {
-				return 32;
-			} else {
-				return 65 + idx;
-			}
-		},
-
-		string: function(maxLen) { 
-			var len = Random.length(maxLen);
-			var str = '';
-			for (var i=0; i<len; i++) {
-				str += String.fromCharCode(Random.char());
-			}
-			return str;
-		},
-
-		array: function(gen, maxLen) {
-			var len = Random.length(maxLen);
-			var a = [];
-			for (var i=0; i<len; i++) {
-				a.push(gen());
-			}
-			return a;
-		}
-	};
-
-	var eq = function(a,b, msg) {
-		if (a != b && !(typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b))) {
-			throw(Error(msg + " : " +a + " != " + b));
-		}
-	};
 	var r = new Rope();
 	r.push("Hello");
 	eq(r.length, 5);
@@ -316,7 +491,21 @@ Rope.test = function() {
 			eq(r.toUpperCase().toString(), str.toUpperCase(), "toUpperCase");
 			eq(r.toLowerCase().toString(), str.toLowerCase(), "toLowerCase");
 			eq(r.replace(/[A-G]/g, '*').toString(), str.replace(/[A-G]/g, '*'), "replace");
-			eq(JSON.stringify(r.match(/[A-G]/g)), JSON.stringify(str.match(/[A-G]/g)), "match");
+			eq(r.search(/[A-G]/).toString(), str.search(/[A-G]/), "search");
+			eq(r.search("FA").toString(), str.search("FA"), "search");
+			eq(r.match(/[A-G]/g), str.match(/[A-G]/g), "match");
+			eq(r.concat(r, str.substr(20,20)), str.concat(r, str.substr(20,20)), "concat");
+			eq(r.indexOf("G"), str.indexOf("G"), "indexOf");
+			eq(r.lastIndexOf("G"), str.lastIndexOf("G"), "lastIndexOf");
+			eq(r.localeCompare(str.substr(20, 20)), str.localeCompare(str.substr(20, 20)), "localeCompare");
+			eq(r.split("G",4).join(":::"), str.split("G",4).join(":::"), "split");
+			eq(r.substring(start, len), str.substring(start, len), "substring "+start+" "+len);
+			eq(r.substr(start, len), str.substr(start, len), "substr "+start+" "+len);
+			eq(r.toLocaleLowerCase(), str.toLocaleLowerCase(), "toLocaleLowerCase");
+			eq(r.toLocaleUpperCase(), str.toLocaleUpperCase(), "toLocaleUpperCase");
+			eq(r.trim(), str.trim(), "trim");
+			eq(r.trimLeft(), str.trimLeft(), "trimLeft");
+			eq(r.trimRight(), str.trimRight(), "trimRight");
 		}
 	}
 
@@ -338,6 +527,12 @@ Rope.test = function() {
 		}
 	}
 
+	console.log("Rope.test: OK!");
+};
+
+Rope.benchmark = function() {
+
+	console.log("Rope.benchmark start");
 
 	for (var i=0; i<20; i++) {
 
