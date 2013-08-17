@@ -28,9 +28,16 @@ Rope.prototype.toString = function() {
 	return this.segs.join("");
 };
 
+Rope.prototype.clear = function() {
+	this.segs = [];
+	this.length = 0;
+	return this;
+};
+
 Rope.prototype.clone = function() {
 	var r = new Rope();
 	r.segs = this.segs.slice();
+	r.segMaxLength = this.segMaxLength;
 	r.length = this.length;
 	return r;
 };
@@ -91,10 +98,10 @@ Rope.prototype.slice = function(start, end) {
 
 Rope.prototype.splice = function(start, length, replacement) {
 	if (start < 0) {
-		throw Error("Invalid start index");
+		start = Math.max(0, start+this.length);
 	}
 	if (length < 0) {
-		throw Error("Invalid length");
+		length = 0;
 	}
 	if (start > this.length) {
 		start = this.length;
@@ -104,6 +111,9 @@ Rope.prototype.splice = function(start, length, replacement) {
 	}
 	if (this.segs.length === 0 && replacement) {
 		return this.push(replacement);
+	}
+	if (!length && !replacement) {
+		return null;
 	}
 	replacement = (replacement || "");
 	var segs = this.segs, plen;
@@ -231,6 +241,9 @@ Rope.prototype.split = function() {
 };
 
 Rope.prototype.substring = function(start, x) {
+	if (start < 0) {
+		start = 0;
+	}
 	if (x < 0) {
 		x = start;
 		start = 0;
@@ -401,13 +414,15 @@ var Random = {
 	}
 };
 
-var eq = function(a,b, msg) {
+var eq = function(a,b) {
 	if (a != b && !(typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b))) {
 		if (typeof a === typeof b && typeof a === 'object') {
 			if (JSON.stringify(a) !== JSON.stringify(b)) {
+				var msg = Array.prototype.slice.call(arguments, 2).join(" ");
 				throw(Error(msg + " : " + JSON.stringify(a) + " != " + JSON.stringify(b)));
 			}
 		} else {
+			var msg = Array.prototype.slice.call(arguments, 2).join(" ");
 			throw(Error(msg + " : " +a + " != " + b));
 		}
 	}
@@ -527,7 +542,45 @@ Rope.test = function() {
 		}
 	}
 
+	console.log("Rope.test: Quick tests OK!");
+
+	console.log("Rope.test: Exhaustive test 64x10x64x64, this'll take a while");
+
+	var s = "";
+	for (var i=0; i<64; i++) {
+		console.log(i+1 + "/64");
+		for (var len=1; len<=10; len++) {
+			var rope = new Rope();
+			rope.segMaxLength = len > 3 ? (len-3)*10 : len;
+			rope.push(s);
+			for (var j=0; j<64; j++) {
+				for (var k=0; k<64; k++) {
+					r = rope.clone();
+					var str = s;
+					eq(r.slice(j-32, k-32), str.slice(j-32, k-32), "slice", j-32, k-32, len);
+					eq(r.substr(j-32, k-32), str.substr(j-32, k-32), "substr", j-32, k-32, len);
+					eq(r.substring(j-32, k-32), str.substring(j-32, k-32), "substring", j-32, k-32, len);
+
+					r = rope.clone();
+					var spliced = str.split("");
+					spliced.splice(j-32, k-32);
+					r.splice(j-32, k-32);
+					eq(r, spliced.join(""), "splice", j-32, k-32, len);
+
+					r = rope.clone();
+					spliced = str.split("");
+					spliced.splice(j-32, k-32, "f", "o", "o");
+					r.splice(j-32, k-32, "foo");
+					eq(r, spliced.join(""), "splice", j-32, k-32, "foo", len);
+
+				}
+			}
+		}
+		s += "..";
+	}
+
 	console.log("Rope.test: OK!");
+
 };
 
 Rope.benchmark = function() {
