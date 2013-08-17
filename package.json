@@ -1,0 +1,23 @@
+{
+  "name": "rope.js",
+  "version": "0.1.0",
+  "description": "Rope library for fast splicing of large strings",
+  "main": "src/rope.js",
+  "scripts": {
+    "test": "node test/test.js",
+    "benchmark": "node test/benchmark.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kig/rope.js.git"
+  },
+  "keywords": [
+    "rope",
+    "data structure"
+  ],
+  "author": "Ilmari Heikkinen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kig/rope.js/issues"
+  }
+}
