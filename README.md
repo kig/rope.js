@@ -3,6 +3,8 @@
 A rope library for fast string splicing.
 ~10x faster than JS strings at doing small 5-char splices in a 200k string.
 
+It's not really a rope though, it's an array of strings, not a binary tree. 
+
 The Rope class implements all of the String prototype methods, so it can be used as a drop-in replacement for String.
 Read the performance notes before you do though.
 
@@ -12,7 +14,7 @@ Read the performance notes before you do though.
   npm install rope
 
 
-## What's a rope?
+## What's this?
 
 The rope data structure keeps the string in 5kB segments.
 The data structure has no index for fast access so access is ~O(n/5k).
